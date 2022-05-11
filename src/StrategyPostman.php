@@ -1,10 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Shuiping\Swagpostception;
+namespace Shuiping\Postception;
 
-
-use swagpostception\interfaces\Generateable;
+use Shuiping\Postception\interfaces\Generateable;
 
 /**
  * Class StrategyPostman
