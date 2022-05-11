@@ -1,0 +1,206 @@
+{
+	"info": {
+		"_postman_id": "d1bf274e-0ed7-4649-8e02-b8df6aa0b55e",
+		"name": "little-feature",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "{{little-feature}}/convert/getFileSizeByType?type=jpg&size=> 100K&dir=C:\\\\Users\\\\Administrator\\\\Desktop\\\\levelONE\\\\new",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{little-feature}}/convert/getFileSizeByType?type=jpg&size=> 100K&dir=C:\\\\Users\\\\Administrator\\\\Desktop\\\\levelONE\\\\new",
+					"host": [
+						"{{little-feature}}"
+					],
+					"path": [
+						"convert",
+						"getFileSizeByType"
+					],
+					"query": [
+						{
+							"key": "type",
+							"value": "jpg"
+						},
+						{
+							"key": "size",
+							"value": "> 100K"
+						},
+						{
+							"key": "dir",
+							"value": "C:\\\\Users\\\\Administrator\\\\Desktop\\\\levelONE\\\\new"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "/wuhan/gongjijin",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "wife_percent",
+							"value": "17",
+							"type": "text"
+						},
+						{
+							"key": "husband_percent",
+							"value": "10",
+							"type": "text"
+						},
+						{
+							"key": "husband_per_month",
+							"value": "439",
+							"type": "text"
+						},
+						{
+							"key": "wife_per_month",
+							"value": "2431",
+							"type": "text"
+						},
+						{
+							"key": "have_pay_month",
+							"value": "36",
+							"type": "text"
+						},
+						{
+							"key": "husband_balance",
+							"value": "2700",
+							"type": "text"
+						},
+						{
+							"key": "wife_balance",
+							"value": "56035.87",
+							"type": "text"
+						},
+						{
+							"key": "year",
+							"value": "30",
+							"type": "text"
+						},
+						{
+							"key": "principal_lender",
+							"value": "2",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{little-feature}}api/wuhan/gongJiJin",
+					"host": [
+						"{{little-feature}}api"
+					],
+					"path": [
+						"wuhan",
+						"gongJiJin"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "wechat/notify",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "{{little-feature}}/wechat/notify",
+					"host": [
+						"{{little-feature}}"
+					],
+					"path": [
+						"wechat",
+						"notify"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "index",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "{{little-feature}}/user/index",
+					"host": [
+						"{{little-feature}}"
+					],
+					"path": [
+						"user",
+						"index"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "sendDrinkWaterNotice",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "{{little-feature}}/notice/sendDrinkWaterNotice",
+					"host": [
+						"{{little-feature}}"
+					],
+					"path": [
+						"notice",
+						"sendDrinkWaterNotice"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "delete",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "{{little-feature}}/user/delete",
+					"host": [
+						"{{little-feature}}"
+					],
+					"path": [
+						"user",
+						"delete"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

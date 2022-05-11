@@ -1,0 +1,21 @@
+{
+    "name": "shuiping/swagpostception",
+    "description": "generate codeception api test from postman json",
+    "type": "1",
+    "require": {
+        "php": ">=7.2"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Shuiping\\Swagpostception\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "shuiping",
+            "email": "1037547965@qq.com"
+        }
+    ],
+    "minimum-stability": "dev"
+}
