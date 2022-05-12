@@ -28,11 +28,13 @@ abstract class StrategyBase
      * @return bool
      * @throws \Exception
      */
-    protected function createDir (string $name): bool
+    protected function createDir(string $name): bool
     {
-        $directory = __DIR__ . '/output/' . $name  . '_' . date('Y.m.d_H:i:s', time()) . '/';
-        if(!mkdir($directory, 0750, true)) {
-            throw new \Exception('Directory creation failed ' . $directory);
+        $directory = pathinfo(__DIR__, PATHINFO_DIRNAME) . DIRECTORY_SEPARATOR . 'output' . DIRECTORY_SEPARATOR . $name . DIRECTORY_SEPARATOR;
+        if (!is_dir($directory)) {
+            if (!mkdir($directory, 0750, true) && !is_dir($directory)) {
+                throw new \Exception('Directory creation failed ' . $directory);
+            }
         }
 
         $this->directory = $directory;
@@ -43,14 +45,14 @@ abstract class StrategyBase
     /**
      * @return string
      */
-    abstract protected function getProjectName (): string;
+    abstract protected function getProjectName(): string;
 
     /**
      * @param object $data
      * @return bool
      * @throws \Exception
      */
-    public function generate ( $data): bool
+    public function generate($data): bool
     {
         $this->setData($data);
         $this->createDir($this->getProjectName());
@@ -70,7 +72,7 @@ abstract class StrategyBase
     /**
      * @param $render
      */
-    protected function setRender ($render)
+    protected function setRender($render)
     {
         $this->render = $render;
     }
@@ -78,7 +80,8 @@ abstract class StrategyBase
     /**
      * @param object $data
      */
-    protected function setData( $data): void {
+    protected function setData($data): void
+    {
         $this->data = $data;
     }
 

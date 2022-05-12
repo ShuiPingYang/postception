@@ -30,38 +30,33 @@ class StrategyPostman extends StrategyBase implements Generateable
      * @return bool
      * @throws \Exception
      */
-    public function generate ( $data): bool
+    public function generate($data): bool
     {
         parent::generate($data);
         /** @todo replace StdClass by Structs */
-        foreach ($this->data->item as $list) {
-            echo PHP_EOL . 'List' . $list->name;
-            $this->processCollectionFolder($list);
+        foreach ($this->data->item as $item) {
+            echo PHP_EOL . 'List: ' . $item->name;
+            $this->processCollectionFolder($item);
         }
 
         return true;
     }
 
     /**
-     * @param object $list
+     * generate cept file
+     * @param object $item
      * @throws \Exception
      */
-    protected function processCollectionFolder($list): void
+    protected function processCollectionFolder($item): void
     {
-        $directory = $this->directory . '/' . $list->name;
-        if(!mkdir($directory, 0750, true) && !is_dir($directory)) {
-            throw new \Exception('Directory creation failed ' . $directory);
-        }
-        $methods = [];
-        foreach ($list->item as $request) {
-            echo PHP_EOL . 'Request: ' . $request->name;
-            $methods[] = $this->render->renderMethod($request);
-        }
+        $function_codes = [];
+        echo PHP_EOL . 'Request: ' . $item->name;
+        $function_codes[] = $this->render->renderFunction($item);
 
-        $result = $this->render->renderCept($list, $methods);
-        echo PHP_EOL . 'Result: ' . file_put_contents($directory . $list->name . '.php', $result);
-        echo PHP_EOL . 'END' ;
+        $result = $this->render->renderCept($item, $function_codes);
+        // ddd($function_codes,$result);
+        echo PHP_EOL . 'Result: ' . file_put_contents($this->directory . 'Test.php', $result, FILE_APPEND);
+        echo PHP_EOL . 'END';
     }
-
 
 }

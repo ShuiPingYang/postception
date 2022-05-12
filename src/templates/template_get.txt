@@ -5,7 +5,7 @@ public function %name%Test(ApiTester $I)
 {
     $I->wantTo("%description%");
     $I->haveHttpHeader('Content-Type', 'application/json');
-    $I->sendPost('%url%', %params%);
+    $I->sendGet('%url%', %params%);
     $I->seeResponseCodeIs(\Codeception\Util\HttpCode::OK); // 200
     $I->seeResponseIsJson();
     //$I->seeResponseContainsJson(['message' => 'Success']);

@@ -22,8 +22,10 @@ class Render
     protected const PARAM_CEPT_CEPTNAME = 'ceptname';
     protected const PARAM_CEPT_METHODS = 'methods';
 
+    protected const TEMPLATE_FILE = '/templates/template_';
     protected const TEMPLATE_POST = '/templates/template_post.txt';
     protected const TEMPLATE_CEPT = '/templates/template_cept.txt';
+    protected const REQUEST_PARAM_MODE = 'formdata';
 
     /**
      * @var
@@ -31,38 +33,65 @@ class Render
     protected $template;
 
     /**
-     * @param object $list
-     * @param array $methods
+     * generate cept file
+     * @param object $item
+     * @param array $function_codes
      * @return string
      */
-    public function renderCept( $list, array $methods): string {
-        $this->template = file_get_contents(__DIR__ . self::TEMPLATE_CEPT);
-        $this->renderParam(self::TEMPLATE_POST, $list->name);
-        $this->renderParam(self::PARAM_CEPT_METHODS, implode('', $methods));
+    public function renderCept($item, array $function_codes): string
+    {
+        static $var = 0;
+        if ($var < 1) {
+            $this->template = file_get_contents(__DIR__ . self::TEMPLATE_CEPT);
+        }
+        $this->renderParam(self::TEMPLATE_POST, $item->name);
+        $this->renderParam(self::PARAM_CEPT_METHODS, implode('', $function_codes));
 
+        $var++;
         return $this->template;
     }
 
     /**
+     * generate cept code
      * @param object $request
      * @return string
      * @throws \Exception
      */
-    public function renderMethod ( $request): string
+    public function renderFunction($request): string
     {
-        if(empty($request->request->method)) {
-            throw new \Exception('Empty method type');
+        if (empty($request->request->method)) {
+            throw new \Exception(sprintf('Empty %s method type', $request->request->method));
         }
-        if(empty($this->getMethodTemplate($request->request->method))) {
-            return '';
+        if (empty($this->getMethodTemplate($request->request->method))) {
+            throw new \Exception(sprintf('Dont have %s type template', $request->request->method));
         }
 
-        $this->template = file_get_contents($this->getMethodTemplate($request->request->method));
-        $this->renderParam(self::PARAM_NAME, $request->name);
-        $this->renderParam(self::PARAM_DESCRIPTION, $request->description);
-        $this->renderParam(self::PARAM_URL, $request->url->raw);
-        $this->renderParam(self::PARAM_PARAMS, (array) $request->request->body->raw);
+        $this->template = file_get_contents($this->getMethodTemplate($request->request->method ?? ''));
+        $this->renderParam(self::PARAM_NAME, $request->name ?? '');
+        $this->renderParam(self::PARAM_DESCRIPTION, $request->description ?? '');
+        $this->renderParam(self::PARAM_URL, $request->request->url->raw ?? '');
 
+        // need to handle some kind of params
+        switch ($request->request->body->mode) {
+            case 'raw':
+                if (!empty($request->request->body->raw)) {
+                    $this->renderParam(self::PARAM_PARAMS, (array)$request->request->body->raw);
+                }
+                break;
+            case 'formdata':
+            case 'urlencoded':
+                if (!$request->request->body->formdata && !$request->request->body->urlencoded) {
+                    $this->renderParam(self::PARAM_PARAMS, []);
+                    break;
+                }
+                $formdata = $request->request->body->formdata ?? $request->request->body->urlencoded;
+                $params = [];
+                foreach ($formdata as $formdatum) {
+                    $params[$formdatum->key] = $formdatum->value;
+                }
+                $this->renderParam(self::PARAM_PARAMS, $params);
+                break;
+        }
         return $this->template;
     }
 
@@ -72,6 +101,9 @@ class Render
      */
     protected function renderParam(string $name, $value)
     {
+        if (is_array($value)) {
+            $value = var_export($value, true);
+        }
         $this->template = str_replace("%$name%", $value, $this->template);
     }
 
@@ -80,18 +112,13 @@ class Render
      * @return string
      * @throws \Exception
      */
-    protected function getMethodTemplate (string $methodType): string
+    protected function getMethodTemplate(string $methodType): string
     {
-        $map = [
-            self::REQUEST_POST => __DIR__ . self::TEMPLATE_POST
-        ];
-        if(empty($methodType) || !is_string($methodType) || !isset($map[$methodType])) {
-            return '';
-            //throw new \Exception('Wrong method type');
+        $template = __DIR__ . self::TEMPLATE_FILE . strtolower($methodType) . '.txt';
+        if (!file_exists($template)) {
+            throw new \Exception(sprintf('Dont have %s type template', $methodType));
         }
-
-        return $map[$methodType];
+        return $template;
     }
-
 
 }
