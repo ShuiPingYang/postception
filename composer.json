@@ -3,10 +3,7 @@
     "description": "generate codeception api test from postman json",
     "type": "1",
     "require": {
-        "php": ">=7.2.1",
-        "codeception/codeception": "^4.1",
-        "codeception/module-asserts": "^2.0",
-        "codeception/module-rest": "^2.0"
+        "php": ">=7.2.1"
     },
     "license": "MIT",
     "autoload": {

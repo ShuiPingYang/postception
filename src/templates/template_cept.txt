@@ -1,26 +1,17 @@
 <?php
 
-namespace %namespace%;
-
-/**
- * Тестирование Merchandising API
- */
 class %ceptname%Cest
 {
 
     /**
      * @inheritdoc
-     *
      * @param ApiTester $I
      */
+    public $cookie;
+
     public function _before(ApiTester $I)
     {
-        if ($this->_initCompleted) {
-            return true;
-        }
-
-        $this->_initCompleted = true;
+        $this->cookie = 'PHPSESSID=' . $I->grabFromRedis('CODECEPTION_PHPSESSID');
     }
 
     %methods%
-

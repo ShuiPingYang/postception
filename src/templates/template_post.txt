@@ -4,9 +4,14 @@
 public function %name%Test(ApiTester $I)
 {
     $I->wantTo("%description%");
+    $I->haveHttpHeader('Cookie', $this->cookie);
     $I->haveHttpHeader('Content-Type', 'application/json');
     $I->sendPost('%url%', %params%);
-    $I->seeResponseCodeIs(\Codeception\Util\HttpCode::OK); // 200
+    // 使用返回结果
+    $data = $I->grabResponse();
+    // 显示一下返回的结果，不是必须的
+    dumps($data);
+
     $I->seeResponseIsJson();
-    //$I->seeResponseContainsJson(['message' => 'Success']);
+    $I->seeResponseMatchesJsonType(%response_check%);
 }
