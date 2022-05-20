@@ -78,7 +78,7 @@ class StrategyPostman extends StrategyBase implements Generateable
         echo PHP_EOL . 'Request: ' . $item->name;
         $function_codes[] = $this->render->renderFunction($item);
 
-        return $this->render->renderCept($item, $function_codes);
+        return $this->render->renderCept($function_codes);
     }
 
 }

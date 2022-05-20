@@ -8,12 +8,6 @@ namespace Shuiping\Postception;
  */
 class Render
 {
-
-    public const REQUEST_GET = 'GET';
-    public const REQUEST_POST = 'POST';
-    public const REQUEST_PUT = 'PUT';
-    public const REQUEST_DELETE = 'DELETE';
-
     protected const PARAM_NAME = 'name';
     protected const PARAM_DESCRIPTION = 'description';
     protected const PARAM_PARAMS = 'params';
@@ -23,9 +17,7 @@ class Render
     protected const PARAM_CEPT_METHODS = 'methods';
 
     protected const TEMPLATE_FILE = '/templates/template_';
-    protected const TEMPLATE_POST = '/templates/template_post.txt';
     protected const TEMPLATE_CEPT = '/templates/template_cept.txt';
-    protected const REQUEST_PARAM_MODE = 'formdata';
     // postman里面可能存在全局host变量，使用下面或者替换
     const REQUEST_URL = 'https://tool.oschina.net/regex';
     const RESPONSE_CHACK = 'response_check';
@@ -35,9 +27,9 @@ class Render
     const RESPONSE_DATA = 'msg';
     // 默认的json返回结果检查规则
     const DEFAULT_RULES = [
-        'code' => 'integer:=200',
-        'message' => 'string',
-        'data' => 'array',
+        'flag' => 'integer:=1',
+        'msg' => 'string',
+        '__token__' => 'string',
     ];
     // 不解析的字段
     const NOT_PARSE = ['info', 'list'];
@@ -53,10 +45,9 @@ class Render
      * @param array $function_codes
      * @return string
      */
-    public function renderCept($item, array $function_codes): string
+    public function renderCept(array $function_codes): string
     {
         static $var = 0;
-        $slices = explode('/', $item->name);
         if ($var < 1) {
             $this->template = file_get_contents(__DIR__ . self::TEMPLATE_CEPT);
             $this->renderParam(self::PARAM_CEPT_CEPTNAME, 'Api');
@@ -70,11 +61,16 @@ class Render
     /**
      * generate cept code
      * @param object $request
-     * @return string
+     * @return string|null
      * @throws \Exception
      */
-    public function renderFunction($request_item): string
+    public function renderFunction($request_item): ?string
     {
+        // 过滤相同的请求
+        static $exists_methods = [];
+        // 记录请求的名称，如果存在多个example，需要修改后续方法名称，避免方法名称重复
+        static $exists_names = [];
+        static $exists_name_index = 0;
         if (empty($request_item->method)) {
             throw new \Exception(sprintf('Empty %s method type', $request_item->method));
         }
@@ -83,20 +79,18 @@ class Render
         }
 
         $this->template = file_get_contents($this->getMethodTemplate($request_item->method ?? ''));
-        if (strlen($request_item->name) > 20) {
-            $request_item->name = parse_url($request_item->name, PHP_URL_PATH);
-        }
-        $slices = explode('/', $request_item->name);
 
-        $this->renderParam(self::PARAM_NAME, $slices[3] ?? $slices[1] ?? $slices[0]);
-        $this->renderParam(self::PARAM_DESCRIPTION, $request_item->description ?? 'Test ' . $request_item->name);
-        $this->renderParam(self::PARAM_URL, $request_item->url->raw ?? '');
+        // 替换名称中的斜杠字符
+        $name = implode('', $request_item->url->path);
+        $this->renderParam(self::PARAM_DESCRIPTION, $request_item->description ?? 'Test ' . $name);
+        $this->renderParam(self::PARAM_URL, explode('?', $request_item->url->raw)[0]);
         // 将保存的示例解析出来做判断，如果不存在示例，那就使用默认规则
         if (empty($request_item->response_body)) {
             $this->renderParam(self::RESPONSE_CHACK, self::DEFAULT_RULES);
         } else {
             $response_body = json_decode($request_item->response_body, true);
             foreach ($response_body as $key => $value) {
+                // 分字段进行判断
                 if ($key !== self::RESPONSE_DATA) {
                     $rules[$key] = gettype($value);
                 }
@@ -111,36 +105,33 @@ class Render
             $this->renderParam(self::RESPONSE_CHACK, var_export($rules, true) ?? '');
         }
 
-        // 如果没有参数，就直接替换为空数组
-        if (empty($request_item->body)) {
-            $this->renderParam(self::PARAM_PARAMS, var_export([], true));
-            return $this->template;
+        // 防止url和body体都有参数，且参数不相同
+        $url_params = $request_item->url->query ?? (object)[];
+        $url_params = json_decode(json_encode($url_params, 320), true);
+        $url_params = $this->changeParams($url_params);
+
+        $body_params = $request_item->body->raw ?? $request_item->body->formdata ?? $request_item->body->urlencoded ?? (object)[];
+        $body_params = json_decode(json_encode($body_params, 320), true);
+        $body_params = $this->changeParams($body_params);
+
+        $real_params = array_merge($url_params, $body_params);
+        // 如果已经存在同样的请求信息，直接过滤
+        $exist = md5(json_encode($real_params) . $name . $request_item->method);
+        if (in_array($exist, $exists_methods)) {
+            return $this->template = null;
         }
 
-        switch ($request_item->body->mode) {
-            case 'raw':
-                if (!empty($request_item->body->raw)) {
-                    $this->renderParam(self::PARAM_PARAMS, $this->changeParams(json_decode($request_item->body->raw, true)));
-                }
-                break;
-            case 'formdata':
-            case 'urlencoded':
-                // 如果没有param，直接使用空数组代替
-                if (empty($request_item->body->formdata) && empty($request_item->body->urlencoded)) {
-                    $this->renderParam(self::PARAM_PARAMS, []);
-                    break;
-                }
-                $formdata = $request_item->body->formdata ?? $request_item->body->urlencoded;
-                $params = [];
-                foreach ($formdata as $formdatum) {
-                    $params[$formdatum->key] = $formdatum->value;
-                }
-                $this->renderParam(self::PARAM_PARAMS, $this->changeParams($params));
-                break;
-            default:
-                $this->renderParam(self::PARAM_PARAMS, var_export([], true));
-                break;
+        // 替换方法名称
+        $exists_methods[] = $exist;
+        // 如果存在同名，也就是就要加上方法序数
+        if (in_array($name, $exists_names)) {
+            $exists_name_index++;
+            $name .= $exists_name_index;
         }
+        $exists_names[] = $name;
+        $this->renderParam(self::PARAM_NAME, $name);
+        // 替换参数信息
+        $this->renderParam(self::PARAM_PARAMS, var_export($real_params, true));
         return $this->template;
     }
 
@@ -175,13 +166,16 @@ class Render
      */
     public function changeParams(array $params)
     {
-        foreach ($params as $key => $param) {
+        $new_params = [];
+        foreach ($params as $param) {
             // 如果是数字类型的字符串，且第一个数字不是0，那么就需要转成数字参数
-            if (is_string($param) && is_numeric($param) && strpos($param, '0') !== 0) {
-                $params[$key] = $param + 0;
+            if (is_string($param['value']) && is_numeric($param['value']) && strpos($param['value'], '0') !== 0) {
+                $new_params[$param['key']] = $param['value'] + 0;
+            } else {
+                $new_params[$param['key']] = $param['value'];
             }
         }
-        return $params;
+        return $new_params;
     }
 
     /**
@@ -193,7 +187,13 @@ class Render
         if (is_array($value)) {
             $value = var_export($value, true);
         }
-        $this->template = str_replace("%$name%", $value, $this->template);
+
+        return $this->template = str_replace("%$name%", $value, $this->template);
+
+        // if ($name === 'name') {
+        //     // dumps(str_replace("%$name%", $value, $this->template),1111111111);
+        //     ddd("%$name%", $value, $this->template);
+        // }
     }
 
     /**
