@@ -20,6 +20,7 @@ class Render
     protected const TEMPLATE_CEPT = '/templates/template_cept.txt';
     // postman里面可能存在全局host变量，使用下面或者替换
     const REQUEST_URL = 'https://tool.oschina.net/regex';
+    const REQUEST_METHOD = 'request_method';
     const RESPONSE_CHACK = 'response_check';
     // 返回的状态码字段名称
     const RESPONSE_CODE = 'flag';
@@ -28,7 +29,7 @@ class Render
     // 默认的json返回结果检查规则
     const DEFAULT_RULES = [
         'flag' => 'integer:=1',
-        'msg' => 'string',
+        'msg' => 'array',
         '__token__' => 'string',
     ];
     // 不解析的字段
@@ -89,18 +90,8 @@ class Render
             $this->renderParam(self::RESPONSE_CHACK, self::DEFAULT_RULES);
         } else {
             $response_body = json_decode($request_item->response_body, true);
-            foreach ($response_body as $key => $value) {
-                // 分字段进行判断
-                if ($key !== self::RESPONSE_DATA) {
-                    $rules[$key] = gettype($value);
-                }
-                if ($key === self::RESPONSE_CODE) {
-                    $rules[$key] = gettype($value) . ':=' . $value;
-                }
-                if (is_array($value)) {
-                    $rules[$key] = $this->getValueType($value);
-                }
-            }
+            // 保存的example的结果
+            $rules = $this->getValueType($response_body);
             // 检查返回结果里面的字段规则，并替换
             $this->renderParam(self::RESPONSE_CHACK, var_export($rules, true) ?? '');
         }
@@ -130,6 +121,7 @@ class Render
         }
         $exists_names[] = $name;
         $this->renderParam(self::PARAM_NAME, $name);
+        $this->renderParam(self::REQUEST_METHOD, ucfirst(strtolower($request_item->method)));
         // 替换参数信息
         $this->renderParam(self::PARAM_PARAMS, var_export($real_params, true));
         return $this->template;
@@ -143,19 +135,24 @@ class Render
      */
     public function getValueType($arr)
     {
-        foreach ($arr as $k => $v) {
-            if (is_array($arr[$k])) {
-                if (in_array($k, self::NOT_PARSE)) {
-                    $arr[$k] = 'array';
+        foreach ($arr as $key => $item) {
+            if (is_array($item) && !in_array($key, self::NOT_PARSE)) {
+                // 特殊处理msg里面没有key的数据
+                if (isset($item[0])) {
+                    $rules[$key] = gettype($item);
                 } else {
-                    $arr[$k] = $this->getValueType($arr[$k]);
+                    // 正常数组
+                    $rules[$key] = $this->getValueType($item);
                 }
             } else {
-                $gettype = gettype($arr[$k]);
-                $arr[$k] = $gettype === 'double' ? 'float' : $gettype;
+                if ($key === self::RESPONSE_CODE) {
+                    $rules[$key] = gettype($item) . ':=' . $item;
+                } else {
+                    $rules[$key] = gettype($item);
+                }
             }
         }
-        return $arr;
+        return $rules;
     }
 
     /**
@@ -204,8 +201,9 @@ class Render
     protected function getMethodTemplate(string $methodType): string
     {
         $template = __DIR__ . self::TEMPLATE_FILE . strtolower($methodType) . '.txt';
+        // if template is not exist,use post template as default
         if (!file_exists($template)) {
-            throw new \Exception(sprintf('Dont have %s type template', $methodType));
+            $template = __DIR__ . self::TEMPLATE_FILE . strtolower('post') . '.txt';
         }
         return $template;
     }

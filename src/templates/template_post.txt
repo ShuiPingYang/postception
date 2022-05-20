@@ -6,7 +6,7 @@ public function %name%(ApiTester $I)
     $I->wantTo("%description%");
     $I->haveHttpHeader('Cookie', $this->cookie);
     $I->haveHttpHeader('Content-Type', 'application/json');
-    $I->sendPost('%url%', %params%);
+    $I->send%request_method%('%url%', %params%);
     // 使用返回结果
     // $data = $I->grabResponse();
     // 显示一下返回的结果，不是必须的
