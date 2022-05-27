@@ -46,14 +46,16 @@ class Render
      * @param array $function_codes
      * @return string
      */
-    public function renderCept(array $function_codes): string
+    public function renderCept(array $function_codes, $path = ''): string
     {
-        static $var = 0;
-        if ($var < 1) {
+        static $modules = [];
+        $module = explode('/', $path)[2];
+        if (!in_array($module, $modules)) {
             $this->template = file_get_contents(__DIR__ . self::TEMPLATE_CEPT);
-            $this->renderParam(self::PARAM_CEPT_CEPTNAME, 'Api');
-            $var++;
+            $this->renderParam(self::PARAM_CEPT_CEPTNAME, $module);
+            $modules[] = $module;
         }
+
         $this->renderParam(self::PARAM_CEPT_METHODS, implode('', $function_codes));
 
         return $this->template;
@@ -81,8 +83,9 @@ class Render
 
         $this->template = file_get_contents($this->getMethodTemplate($request_item->method ?? ''));
 
-        // 替换名称中的斜杠字符
-        $name = implode('', $request_item->url->path);
+        // 替换名称中的斜杠字符,包括模块，控制器，方法名，例如：api/Log/getWeb
+        $url_path = $request_item->url->path;
+        $name = implode('/', $url_path);
         $this->renderParam(self::PARAM_DESCRIPTION, $request_item->description ?? 'Test ' . $name);
         $this->renderParam(self::PARAM_URL, explode('?', $request_item->url->raw)[0]);
         // 将保存的示例解析出来做判断，如果不存在示例，那就使用默认规则
@@ -119,8 +122,9 @@ class Render
             $exists_name_index++;
             $name .= $exists_name_index;
         }
+        // ddd(file_put_contents('test.txt',json_encode($request_item,320)));
         $exists_names[] = $name;
-        $this->renderParam(self::PARAM_NAME, $name);
+        $this->renderParam(self::PARAM_NAME, explode('/', $name)[2]);
         $this->renderParam(self::REQUEST_METHOD, ucfirst(strtolower($request_item->method)));
         // 替换参数信息
         $this->renderParam(self::PARAM_PARAMS, var_export($real_params, true));
