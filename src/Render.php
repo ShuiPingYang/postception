@@ -73,7 +73,7 @@ class Render
         static $exists_methods = [];
         // 记录请求的名称，如果存在多个example，需要修改后续方法名称，避免方法名称重复
         static $exists_names = [];
-        static $exists_name_index = 0;
+        static $exists_name_index = 10000;
         if (empty($request_item->method)) {
             throw new \Exception(sprintf('Empty %s method type', $request_item->method));
         }
@@ -86,8 +86,7 @@ class Render
         // 替换名称中的斜杠字符,包括模块，控制器，方法名，例如：api/Log/getWeb
         $url_path = $request_item->url->path;
         $name = implode('/', $url_path);
-        $this->renderParam(self::PARAM_DESCRIPTION, $request_item->description ?? 'Test ' . $name);
-        $this->renderParam(self::PARAM_URL, explode('?', $request_item->url->raw)[0]);
+        $this->renderParam(self::PARAM_URL, $name);
         // 将保存的示例解析出来做判断，如果不存在示例，那就使用默认规则
         if (empty($request_item->response_body)) {
             $this->renderParam(self::RESPONSE_CHACK, self::DEFAULT_RULES);
@@ -100,15 +99,19 @@ class Render
         }
 
         // 防止url和body体都有参数，且参数不相同
-        $url_params = $request_item->url->query ?? (object)[];
-        $url_params = json_decode(json_encode($url_params, 320), true);
-        $url_params = $this->changeParams($url_params);
+        $url_params = $request_item->url->query ?? [];
+        $url_params = $url_params ? json_decode(urldecode(json_encode($url_params, 320)), true) : [];
+        if ($url_params && is_array($url_params)) {
+            $url_params = $this->changeParams($url_params);
+        }
 
-        $body_params = $request_item->body->raw ?? $request_item->body->formdata ?? $request_item->body->urlencoded ?? (object)[];
-        $body_params = json_decode(json_encode($body_params, 320), true);
-        $body_params = $this->changeParams($body_params);
+        $body_params = $request_item->body->raw ?? $request_item->body->formdata ?? $request_item->body->urlencoded ?? [];
+        $body_params = $body_params ? json_decode(json_encode($body_params, 320), true) : [];
+        if ($body_params && is_array($body_params)) {
+            $body_params = $this->changeParams($url_params);
+        }
 
-        $real_params = array_merge($url_params, $body_params);
+        $real_params = array_merge((array)$url_params, (array)$body_params);
         // 如果已经存在同样的请求信息，直接过滤
         $exist = md5(json_encode($real_params) . $name . $request_item->method);
         if (in_array($exist, $exists_methods)) {
@@ -124,7 +127,9 @@ class Render
         }
         // ddd(file_put_contents('test.txt',json_encode($request_item,320)));
         $exists_names[] = $name;
-        $this->renderParam(self::PARAM_NAME, explode('/', $name)[2]);
+        $this->renderParam(self::PARAM_DESCRIPTION, $request_item->description ?? 'Test ' . $name);
+        $value = explode('/', $name);
+        $this->renderParam(self::PARAM_NAME, end($value));
         $this->renderParam(self::REQUEST_METHOD, ucfirst(strtolower($request_item->method)));
         // 替换参数信息
         $this->renderParam(self::PARAM_PARAMS, var_export($real_params, true));
@@ -139,10 +144,11 @@ class Render
      */
     public function getValueType($arr)
     {
+        $rules = [];
         foreach ($arr as $key => $item) {
             if (is_array($item) && !in_array($key, self::NOT_PARSE)) {
                 // 特殊处理msg里面没有key的数据
-                if (isset($item[0])) {
+                if (isset($item[0]) || empty($item)) {
                     $rules[$key] = gettype($item);
                 } else {
                     // 正常数组

@@ -13,6 +13,7 @@ public function %name%(ApiTester $I)
     // 显示一下返回的结果，不是必须的
     // dumps($data);
 
+    $I->seeResponseCodeIs(\Codeception\Util\HttpCode::OK);
     $I->seeResponseIsJson();
     $I->seeResponseMatchesJsonType(%response_check%);
 }
